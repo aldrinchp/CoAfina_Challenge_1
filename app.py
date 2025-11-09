@@ -32,12 +32,12 @@ from transformers import CLIPProcessor, CLIPModel
 
 @st.cache_resource
 def load_siglip_model():
-    """Carga un modelo CLIP más liviano compatible con Streamlit Cloud"""
-    with st.spinner("🔄 Cargando modelo CLIP..."):
+    """Carga modelo SigLIP solo visual (sin input_ids requeridos)"""
+    with st.spinner("🔄 Cargando modelo SigLIP..."):
         DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-        CLIP_MODEL_PATH = "openai/clip-vit-base-patch32"
-        embeddings_model = CLIPModel.from_pretrained(CLIP_MODEL_PATH).to(DEVICE)
-        embeddings_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_PATH)
+        MODEL_PATH = "google/siglip-base-patch16-224"
+        embeddings_model = SiglipVisionModel.from_pretrained(MODEL_PATH).to(DEVICE)
+        embeddings_processor = AutoProcessor.from_pretrained(MODEL_PATH)
     return embeddings_model, embeddings_processor, DEVICE
 
 
@@ -99,7 +99,7 @@ class TeamClassifier:
                 batch = crops_pil[i:i + batch_size]
                 inputs = self.embeddings_processor(images=batch, return_tensors="pt").to(self.device)
                 outputs = self.embeddings_model(**inputs)
-                batch_embeddings = torch.mean(outputs.last_hidden_state, dim=1).cpu().numpy()
+                batch_embeddings = outputs.pooler_output.cpu().numpy()
                 embeddings_list.append(batch_embeddings)
         
         return np.concatenate(embeddings_list, axis=0)
