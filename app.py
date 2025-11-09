@@ -32,13 +32,12 @@ from transformers import CLIPProcessor, CLIPModel
 
 @st.cache_resource
 def load_siglip_model():
-    """Carga modelo SigLIP solo visual (sin input_ids requeridos)"""
-    with st.spinner("🔄 Cargando modelo SigLIP..."):
+    """Carga modelo CLIP liviano compatible con Streamlit Cloud"""
+    with st.spinner("🔄 Cargando modelo CLIP..."):
         DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-        MODEL_PATH = "google/siglip-base-patch16-224"
-        embeddings_model = SiglipVisionModel.from_pretrained(MODEL_PATH).to(DEVICE)
-        embeddings_processor = AutoProcessor.from_pretrained(MODEL_PATH)
-    return embeddings_model, embeddings_processor, DEVICE
+        model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(DEVICE)
+        processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    return model, processor, DEVICE
 
 
 # --- CONSTANTES ---
@@ -86,24 +85,26 @@ class TeamClassifier:
         self.reducer = None
         self.kmeans = None
         
+    
     def extract_embeddings(self, crops, batch_size=16):
-        """Extrae embeddings usando SigLIP"""
+    """Extrae embeddings usando CLIP (solo imágenes)"""
         if len(crops) == 0:
             return np.array([])
-        
+    
         crops_pil = [sv.cv2_to_pillow(crop) for crop in crops]
-        
         embeddings_list = []
+    
         with torch.no_grad():
             for i in range(0, len(crops_pil), batch_size):
                 batch = crops_pil[i:i + batch_size]
                 inputs = self.embeddings_processor(images=batch, return_tensors="pt").to(self.device)
-                outputs = self.embeddings_model(**inputs)
-                batch_embeddings = outputs.pooler_output.cpu().numpy()
+                # 🔹 Obtener directamente las features de imagen
+                outputs = self.embeddings_model.get_image_features(**inputs)
+                batch_embeddings = outputs.cpu().numpy()
                 embeddings_list.append(batch_embeddings)
-        
+    
         return np.concatenate(embeddings_list, axis=0)
-        
+
     def fit(self, crops, progress_callback=None):
         """Entrena el clasificador con crops de jugadores"""
         if len(crops) < 20:
