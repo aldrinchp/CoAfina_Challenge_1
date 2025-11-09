@@ -28,16 +28,18 @@ def load_yolo_models():
         model_players = YOLO("Models/pgrb_little.pt")
         model_ball = YOLO("Models/ball_little.pt")
     return model_vertex, model_players, model_ball
+from transformers import CLIPProcessor, CLIPModel
 
 @st.cache_resource
 def load_siglip_model():
-    """Carga modelo SigLIP una sola vez"""
-    with st.spinner("🔄 Cargando modelo SigLIP (puede tardar la primera vez)..."):
+    """Carga un modelo CLIP más liviano compatible con Streamlit Cloud"""
+    with st.spinner("🔄 Cargando modelo CLIP..."):
         DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-        SIGLIP_MODEL_PATH = 'google/siglip-base-patch16-224'
-        embeddings_model = SiglipVisionModel.from_pretrained(SIGLIP_MODEL_PATH).to(DEVICE)
-        embeddings_processor = AutoProcessor.from_pretrained(SIGLIP_MODEL_PATH)
+        CLIP_MODEL_PATH = "openai/clip-vit-base-patch32"
+        embeddings_model = CLIPModel.from_pretrained(CLIP_MODEL_PATH).to(DEVICE)
+        embeddings_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_PATH)
     return embeddings_model, embeddings_processor, DEVICE
+
 
 # --- CONSTANTES ---
 BALL_CLASS_ID = 0
