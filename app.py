@@ -7,7 +7,7 @@ from collections import deque
 import torch
 from transformers import AutoProcessor, SiglipVisionModel
 from sklearn.cluster import KMeans
-import umap
+import umap.umap_ as umap
 import tempfile
 import os
 from deep_sort_realtime.deepsort_tracker import DeepSort
